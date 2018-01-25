@@ -2,10 +2,11 @@
 from flask import Flask, jsonify, request
 from parse import *
 from maude import *
+from crontab import CronTab
 
 ##Structure of messages: "<clock,id_user>message"
 ##System files are located inside the following directory
-systemfiles="~systemfiles/"
+systemfiles="../~systemfiles/"
 
 #This function get the ntcc time counter, it's stored in a txt file
 def getNtccTime():
@@ -75,6 +76,18 @@ def storeMemory(mem) :
             i+=1
         else:
             i+=storeChild(mem,stack,i)
+
+def getClocks():
+    global memoryDicc
+    base="0."
+    i=0
+    space=base+str(i)
+    clocks=[]
+    while memoryDicc.get(space) != None:
+        i+=1
+        clocks.append(memoryDicc.get(space+".6"))
+        space=base+str(i)
+    return clocks
 
 ##Function that errase spaces from a program,
 ##that are after every ocurrency of the searchingString
@@ -338,6 +351,17 @@ def replacePidAfter(memory,timeunit):
         index=memory[oldindex:].find(pidstr)
     return memory
 
+def createClock(path, timer):
+  cron = CronTab(user=True)
+  path=str(path)
+  iter = cron.find_comment('p'+path+'$')
+  for i in iter:
+    cron.remove(i)
+  if timer != "0":
+    job = cron.new(command=' ~/.nvm/versions/node/v7.10.1/bin/node ~/dspacenet/node/helpers/tickWorker.js ' + path, comment='p'+path+'$')
+    job.setall(timer)
+  cron.write()
+
 ##Procediment that store a successful execution on the memory and processes txt files
 def saveState(result):
     global ntcctime
@@ -354,6 +378,14 @@ def saveState(result):
     mem.close()
     memoryDicc = {}
     storeMemory(memory)
+    clocks=getClocks()
+    print clocks
+    i=0
+    while i < len(clocks):
+        if clocks[i] != None:
+            createClock(i, clocks[i][0])
+        i+=1
+    print memoryDicc
     proc=open(nameprocess,"w")
     proc.write(processes)
     proc.close()
@@ -401,8 +433,8 @@ def index():
 @app.route('/runsccp', methods=['POST'])
 def runsccp():
     global notbussy
+    notbussy=True
     if notbussy:
-        notbussy=False
         global ntcctime
         ntcctime=getNtccTime()
         global processes
@@ -412,14 +444,12 @@ def runsccp():
         received = request.json['config']
         userp = request.json['user']
         timeunit = str(request.json['timeu'])
-        print timeunit
         if received=="":
             notbussy=True
             return jsonify({'result' : 'error', 'errors' : [{'error' : 'empty input'}]})
         received = erraseSpacePostAndSay(received,"post")
         received = erraseSpacePostAndSay(received,"say")
         received = addIdandOrder(received,userp)
-        print received
         try:
             receivedstr=str(received)
         except:
@@ -446,10 +476,7 @@ def runsccp():
             notbussy=True
             return jsonify({'result' : 'error', 'errors' : errors})
         else:
-            try:
-                saveState(answer[1])
-            except:
-                notbussy=True
+            saveState(answer[1])
             if timeunit=="1":
                 ntccTictac(ntcctime)
             notbussy=True
