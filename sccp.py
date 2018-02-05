@@ -190,12 +190,12 @@ def addIdandOrder(program,id_user):
 ##to the messages
 def addIdandOrderSay(program,id_user):
   global ntcctime
-  tellstr='say("'
+  tellstr='signal("'
   index=program.find(tellstr)
   oldindex=0
   ntcctime=getNtccTime()
   while index!=-1:
-      index=oldindex+index+5
+      index=oldindex+index+8
       userstr="<pids|s|" +str(id_user)+">"
       program=program[:index]+userstr+program[index:]
       oldindex=index+len(userstr)
@@ -352,15 +352,16 @@ def replacePidAfter(memory,timeunit):
     return memory
 
 def createClock(path, timer):
-  cron = CronTab(user=True)
-  path=str(path)
-  iter = cron.find_comment('p'+path+'$')
-  for i in iter:
-    cron.remove(i)
-  if timer != "0":
-    job = cron.new(command=' ~/.nvm/versions/node/v7.10.1/bin/node ~/dspacenet/node/helpers/tickWorker.js ' + path, comment='p'+path+'$')
-    job.setall(timer)
-  cron.write()
+    print("oli")
+    cron = CronTab(user='dspacenet')
+    path=str(path)
+    iter = cron.find_comment('p'+path+'$')
+    for i in iter:
+        cron.remove(i)
+    if timer != "0":
+        job = cron.new(command=' ~/.nvm/versions/node/v9.4.0/bin/node ~/dspacenet/node/helpers/tickWorker.js ' + path, comment='p'+path+'$')
+        job.setall(timer)
+    cron.write()
 
 ##Procediment that store a successful execution on the memory and processes txt files
 def saveState(result):
@@ -551,4 +552,5 @@ def getGlobal():
 
 if __name__ == '__main__':
     app.run(host= '0.0.0.0',port=8082)
+
 
