@@ -6,7 +6,7 @@ from crontab import CronTab
 
 ##Structure of messages: "<clock,id_user>message"
 ##System files are located inside the following directory
-systemfiles="../~systemfiles/"
+systemfiles="~systemfiles/"
 
 #This function get the ntcc time counter, it's stored in a txt file
 def getNtccTime():
