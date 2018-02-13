@@ -74,7 +74,7 @@ class MaudeProcess:
         # define f as a temporal file
         self.f = tempfile.TemporaryFile()
         # start Maude process, redirect stdout and stderr to f
-        self.p = subprocess.Popen(["(cat) | ./Maude/maude.linux64"],
+        self.p = subprocess.Popen(["(cat) | ../sccp/maude.linux64"],
                          stdout=self.f,
                          stderr=subprocess.STDOUT,
                          stdin=PIPE,
@@ -83,7 +83,7 @@ class MaudeProcess:
     def renewProcess(self):
         processid = str(self.p.pid)
         os.system("kill -9 "+processid)
-        self.p = subprocess.Popen(["(cat) | ./Maude/maude.linux64"],
+        self.p = subprocess.Popen(["(cat) | ../sccp/maude.linux64"],
                          stdout=self.f,
                          stderr=subprocess.STDOUT,
                          stdin=PIPE,
