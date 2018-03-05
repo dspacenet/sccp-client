@@ -1,5 +1,3 @@
-
-##this is a test
 from flask import Flask, jsonify, request
 from parse import *
 from maude import *
@@ -353,7 +351,6 @@ def replacePidAfter(memory,timeunit):
     return memory
 
 def createClock(path, timer):
-    print("oli")
     cron = CronTab(user='dspacenet')
     path=str(path)
     iter = cron.find_comment('p'+path+'$')
@@ -384,10 +381,9 @@ def saveState(result):
     print clocks
     i=0
     while i < len(clocks):
-        if clocks[i] != None:
+        if clocks[i] != None and clocks[i][0] != '':
             createClock(i, clocks[i][0])
         i+=1
-    print memoryDicc
     proc=open(nameprocess,"w")
     proc.write(processes)
     proc.close()
