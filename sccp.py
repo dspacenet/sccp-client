@@ -187,7 +187,7 @@ def addIdandOrder(program,id_user):
 ##input: id_user -> username of the user who post the process
 ##output: program -> process tagged, adding clock and username
 ##to the messages
-def addIdandOrderSay(program,id_user):
+def addIdandOrderSignal(program,id_user):
   global ntcctime
   tellstr='signal("'
   index=program.find(tellstr)
@@ -199,6 +199,26 @@ def addIdandOrderSay(program,id_user):
       program=program[:index]+userstr+program[index:]
       oldindex=index+len(userstr)
       index=program[oldindex:].find(tellstr)
+  return program
+
+##Function for adding the program id and user to every say in a process
+##input: program -> process without tags
+##input: id_user -> username of the user who post the process
+##output: program -> process tagged, adding clock and username
+##to the messages
+def addIdandOrderSay(program,id_user):
+  global ntcctime
+  tellstr='say("'
+  index=program.find(tellstr)
+  oldindex=0
+  ntcctime=getNtccTime()
+  while index!=-1:
+      index=oldindex+index+5
+      userstr="<pid|s|" +str(id_user)+">"
+      program=program[:index]+userstr+program[index:]
+      oldindex=index+len(userstr)
+      index=program[oldindex:].find(tellstr)
+  program=addIdandOrderSignal(program,id_user)
   return program
 
 ##Function that extract the information of a string that contains a message
