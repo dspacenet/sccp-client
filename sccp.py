@@ -179,7 +179,7 @@ def addIdandOrder(program,id_user):
       program=program[:index]+userstr+program[index:]
       oldindex=index+len(userstr)
       index=program[oldindex:].find(tellstr)
-  program=addIdandOrderSay(program,id_user)
+  program=addIdandOrderSignal(program,id_user)
   return program
 
 ##Function for adding the program id and user to every say in a process
