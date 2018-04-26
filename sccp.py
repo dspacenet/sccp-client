@@ -25,7 +25,6 @@ processes=""
 ntcctime=getNtccTime()
 memoryDicc={}
 notbussy=True
-notificationsList=[]
 ##Function that obtains every message inside a string of messages from the memory of an agent
 ##stringMessages: '"message 1", "message 2", "message 3" ... '
 ##return: ['message 1', 'message 2', 'message 3' ...]
@@ -441,8 +440,8 @@ def saveState(result):
     memoryDicc = {}
     storeMemory(memory)
     clocks=getClocks()
-    notifications=getNotifications()
-    mergeNotifications(notifications)
+    #notifications=getNotifications()
+    #mergeNotifications(notifications)
     print clocks
     i=0
     while i < len(clocks):
