@@ -25,6 +25,7 @@ processes=""
 ntcctime=getNtccTime()
 memoryDicc={}
 notbussy=True
+notificationsList=[]
 ##Function that obtains every message inside a string of messages from the memory of an agent
 ##stringMessages: '"message 1", "message 2", "message 3" ... '
 ##return: ['message 1', 'message 2', 'message 3' ...]
@@ -87,6 +88,22 @@ def getClocks():
         clocks.append(memoryDicc.get(space+".6"))
         space=base+str(i)
     return clocks
+
+def getNotifications():
+    global memoryDicc
+    base="0."
+    i=0
+    space=base+str(i)
+    notifications=[]
+    while memoryDicc.get(space) != None:
+        i+=1
+        notifications.append(memoryDicc.get(space+".10"))
+        space=base+str(i)
+    return notifications
+
+def storeNotifications(notifications):
+    return 0
+
 
 ##Function that errase spaces from a program,
 ##that are after every ocurrency of the searchingString
@@ -176,6 +193,24 @@ def addIdandOrder(program,id_user):
   while index!=-1:
       index=oldindex+index+6
       userstr="<pids|p|" +str(id_user)+">"
+      program=program[:index]+userstr+program[index:]
+      oldindex=index+len(userstr)
+      index=program[oldindex:].find(tellstr)
+  program=addIdandOrderSignal(program,id_user)
+  return program
+
+##Function for adding the program id and user to every post in a process
+##input: program -> process without tags
+##input: id_user -> username of the user who post the process
+##output: program -> process tagged, adding clock and username
+##to the messages
+def addTagVote(program,id_user):
+  tellstr='vote("'
+  index=program.find(tellstr)
+  oldindex=0
+  while index!=-1:
+      index=oldindex+index+6
+      userstr="<pids|v|" +str(id_user)+">"
       program=program[:index]+userstr+program[index:]
       oldindex=index+len(userstr)
       index=program[oldindex:].find(tellstr)
@@ -381,6 +416,14 @@ def createClock(path, timer):
         job.setall(timer)
     cron.write()
 
+def mergeNotifications(notifications):
+    global notificationsList
+    for i in len(notifications):
+        if notificationsList[i] != None:
+            notificationsList[i] = notificationsList[i] + notifications[i]
+        else:
+            notificationsList[i] = notifications[i]
+
 ##Procediment that store a successful execution on the memory and processes txt files
 def saveState(result):
     global ntcctime
@@ -398,6 +441,8 @@ def saveState(result):
     memoryDicc = {}
     storeMemory(memory)
     clocks=getClocks()
+    notifications=getNotifications()
+    mergeNotifications(notifications)
     print clocks
     i=0
     while i < len(clocks):
@@ -447,7 +492,6 @@ def index():
 ## "errors" : "if the result is error,
 ## here will be the maude errors"
 ##}
-
 @app.route('/runsccp', methods=['POST'])
 def runsccp():
     global notbussy
@@ -468,6 +512,7 @@ def runsccp():
         received = erraseSpacePostAndSay(received,"post")
         received = erraseSpacePostAndSay(received,"say")
         received = addIdandOrder(received,userp)
+        reveived = addTagVote(received,userp)
         try:
             receivedstr=str(received)
         except:
@@ -502,37 +547,6 @@ def runsccp():
     else:
         return jsonify({'result' : 'error', 'errors' : [{'error' : "bussy, try again"}]})
 
-##This route is for get the information of a space
-##It obtain the information of the space from
-##the SCCP memory.
-##For using it.
-##input[json]:
-##{
-## "id" : "a list of integers with the path of the space"
-##}
-##output[json]:
-##{
-## "result" : "it could have the list of constraints or an error",
-##}
-#@app.route('/getSpace', methods=['POST'])
-# def getSpace():
-#     agent=request.json['id']
-#     try:
-#         answer=calculateAgentMemory(int(agent[0]))
-#         agent.pop(0)
-#         for i in agent:
-#             answer=calculateAgentMemoryAlpha(answer,int(i))
-#         paranswer=parse("{}[{}]", answer )
-#         try:
-#             ranswer=paranswer[0]
-#             rranswer=convertMemInJson(ranswer)
-#             rranswer.sort(key=lambda clock: int(clock['clock']),reverse=True)
-#             return jsonify({'result' : rranswer})
-#         except:
-#             return jsonify({'result' : 'error1'})
-#     except:
-#         return jsonify({'result' : 'error2'})
-
 @app.route('/getSpace', methods=['POST'])
 def getSpace():
     global memoryDicc
@@ -565,6 +579,12 @@ def getGlobal():
         answer=convertMemInJson(parsingResult[0])
         answer.sort(key=lambda clock: int(clock['clock']),reverse=True)
         return jsonify({'result' : answer})
+
+##This function returns the global memory
+@app.route('/getGlobal', methods=['GET'])
+def getGlobal():
+    global notificationsList
+    return jsonify({'notifications' : notificationsList})
 
 
 if __name__ == '__main__':
