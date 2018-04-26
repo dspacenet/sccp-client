@@ -580,11 +580,6 @@ def getGlobal():
         answer.sort(key=lambda clock: int(clock['clock']),reverse=True)
         return jsonify({'result' : answer})
 
-##This function returns the global memory
-@app.route('/getGlobal', methods=['GET'])
-def getGlobal():
-    global notificationsList
-    return jsonify({'notifications' : notificationsList})
 
 
 if __name__ == '__main__':
