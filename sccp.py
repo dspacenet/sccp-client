@@ -511,7 +511,8 @@ def runsccp():
         received = erraseSpacePostAndSay(received,"post")
         received = erraseSpacePostAndSay(received,"say")
         received = addIdandOrder(received,userp)
-        reveived = addTagVote(received,userp)
+        received = addTagVote(received,userp)
+        
         try:
             receivedstr=str(received)
         except:
