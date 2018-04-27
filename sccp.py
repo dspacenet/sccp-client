@@ -155,6 +155,17 @@ def addUser(program,user):
       index=program[oldindex:].find(userstr)
   return program
 
+def addAtUser(program,user):
+  userstr='-1'
+  index=program.find(userstr)
+  oldindex=0
+  while index!=-1:
+      index=oldindex+index+1
+      program=program[:index-1]+user+program[index+1:]
+      oldindex=index+len(user)
+      index=program[oldindex:].find(userstr)
+  return program
+
 
 ##Function for adding the program id to a new process
 ##input: program -> process without tags
@@ -531,6 +542,7 @@ def runsccp():
         received = addPid(received)
         received = addPidPosted(received)
         received = addUser(received,userp)
+        received = addAtUser(received,userp)
         processes = received +" || " + processes
         maude.run("red in NTCC-RUN : IO(< "+processes+" ; "+memory+" >) . \n")
         answer=maude.getOutput()
@@ -581,7 +593,7 @@ def getGlobal():
         return jsonify({'result' : answer})
 
 
-
+##Version 26/04/2017 8:10pm
 if __name__ == '__main__':
     app.run(host= '0.0.0.0',port=8082)
 
