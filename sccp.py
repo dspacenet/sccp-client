@@ -507,6 +507,7 @@ def runsccp():
     global notbussy
     notbussy=True
     if notbussy:
+        
         global ntcctime
         ntcctime=getNtccTime()
         global processes
@@ -514,6 +515,7 @@ def runsccp():
         global maude
         refreshState()
         received = request.json['config']
+        print "process: " + received
         userp = request.json['user']
         timeunit = str(request.json['timeu'])
         if received=="":
