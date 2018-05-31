@@ -156,12 +156,12 @@ def addUser(program,user):
   return program
 
 def addAtUser(program,user):
-  userstr='-1'
+  userstr='usn'
   index=program.find(userstr)
   oldindex=0
   while index!=-1:
       index=oldindex+index+1
-      program=program[:index-1]+user+program[index+1:]
+      program=program[:index-1]+user+program[index+2:]
       oldindex=index+len(user)
       index=program[oldindex:].find(userstr)
   return program
