@@ -593,7 +593,7 @@ def getGlobal():
         return jsonify({'result' : answer})
 
 
-##Version 26/04/2017 8:10pm
+##Version 30/05/2018 8:18pm
 if __name__ == '__main__':
     app.run(host= '0.0.0.0',port=8082)
 
