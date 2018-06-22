@@ -6,7 +6,7 @@ def createClock(path, timer):
   for i in iter:
     cron.remove(i)
   if timer != "0":
-    job = cron.new(command=' ~/.nvm/versions/node/v7.10.1/bin/node ~/dspacenet/node/helpers/tickWorker.js ' + path, comment='p'+path+'$')
+    job = cron.new(command=' ~/.nvm/versions/node/v7.10.1/bin/node ~/dspacenet/api/tickWorker.js ' + path, comment='p'+path+'$')
     job.setall(timer)
   cron.write()
 
