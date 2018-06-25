@@ -10,11 +10,12 @@ systemfiles = "~systemfiles/"
 
 
 # This function get the ntcc time counter, it's stored in a txt file
-def getNtccTime():
+def updateNtccTime():
+    global ntccTime
     cl = open(systemfiles+"ntcctime.txt", "r")
     time = cl.readline()
     cl.close()
-    return int(time)
+    ntccTime = int(time)
 
 # Definition of some global variables
 maude = MaudeProcess()
@@ -23,8 +24,7 @@ nameoutput = systemfiles+"output.txt"
 MEMORY_FILE = systemfiles+"memory.txt"
 PROCESS_FILE = systemfiles+"process.txt"
 memory = ""
-processes = ""
-ntccTime = getNtccTime()
+ntccTime = 0
 memoryDictionary = {}
 notBusy = True
 
@@ -88,7 +88,7 @@ def getClocks():
     i = 0
     space = base+str(i)
     clocks = []
-    while memoryDictionary.get(space) !=  None:
+    while memoryDictionary.get(space) is not None:
         i += 1
         clocks.append(memoryDictionary.get(space+".6"))
         space = base+str(i)
@@ -100,7 +100,7 @@ def getNotifications():
     i = 0
     space = base+str(i)
     notifications = []
-    while memoryDictionary.get(space) != None:
+    while memoryDictionary.get(space) is not None:
         i += 1
         notifications.append(memoryDictionary.get(space+".10"))
         space = base+str(i)
@@ -109,24 +109,6 @@ def getNotifications():
 
 def storeNotifications(notifications):
     return 0
-
-
-# Function that erase spaces from a program,
-# that are after every occurency of the searchingString
-# input:
-# program -> is the input program,
-# searchingString -> the string that the function will search
-# for erasing the spaces after it
-def eraseSpacePostAndSay(program, searchingString):
-    index = program.find(searchingString)
-    oldindex = 0
-    while index != -1:
-        index = index+oldindex+4
-        while program[index] == " ":
-            program = program[:index] + program[index+1:]
-        oldindex = index
-        index = program[index:].find(searchingString)
-    return program
 
 
 # Function for adding the program id to a new process
@@ -190,10 +172,11 @@ def addPidPosted(program):
 
 
 # Function that increase the ntcc time counter
-def ntccTictac(c):
+def ntccTicTac():
+    global ntccTime
+    ntccTime += 1
     cl = open(systemfiles+"ntcctime.txt", "w")
-    stWrite = str(c+1)
-    cl.write(stWrite)
+    cl.write(str(ntccTime))
     cl.close()
 
 
@@ -239,10 +222,8 @@ def addTagVote(program, id_user):
 # output: program -> process tagged, adding clock and username
 # to the messages
 def addIdAndOrderSignal(program, id_user):
-    global ntccTime
     index = program.find('signal("')
     oldindex = 0
-    ntccTime = getNtccTime()
     while index != -1:
         index = oldindex + index + 8
         userstr = "<pids|s|" + str(id_user)+">"
@@ -258,10 +239,8 @@ def addIdAndOrderSignal(program, id_user):
 # output: program -> process tagged, adding clock and username
 # to the messages
 def addIdAndOrderSay(program, id_user):
-    global ntccTime
     index = program.find('say("')
     oldindex = 0
-    ntccTime = getNtccTime()
     while index != -1:
         index = oldindex + index + 5
         userstr = "<pid|s|" + str(id_user)+">"
@@ -318,8 +297,6 @@ def refreshState():
     memory = memoryFile.readline()
     memoryFile.close()
     processFile.close()
-
-refreshState()
 
 
 # Function that eliminate the first agent of the agents string
@@ -378,7 +355,7 @@ def getCurrentAgent(agents):
 def convertMemInJson(mem):
     messages = "error"
     memParse = parse("({})", mem)
-    if memParse !=  None:
+    if memParse is not None:
         messages = splitMessages(memParse[0])
     else:
 
@@ -445,7 +422,7 @@ def createClock(path, timer):
     for i in iter:
         cron.remove(i)
     if timer != "0":
-        job = cron.new(command=' ~/.nvm/versions/node/v9.4.0/bin/node ~/dspacenet/node/helpers/tickWorker.js ' + path, comment='p'+path+'$')
+        job = cron.new(command=' ~/.nvm/versions/node/v9.4.0/bin/node ~/dspacenet/api/tickWorker.js ' + path, comment='p'+path+'$')
         job.setall(timer)
     cron.write()
 
@@ -453,11 +430,9 @@ def createClock(path, timer):
 # Procedure that store a successful execution on the memory and processes txt
 # files
 def saveState(result):
-    global ntccTime
     global processes
     global memory
     global memoryDictionary
-    ntccTime = getNtccTime()
     parsingResult = parse("result Conf: < {} ; {} >", result)
     processes = parsingResult[0]
     memory = parsingResult[1]
@@ -473,7 +448,7 @@ def saveState(result):
     print clocks
     i = 0
     while i < len(clocks):
-        if clocks[i] != None and clocks[i][0] != '':
+        if clocks[i] is not None and clocks[i][0] != '':
             createClock(i, clocks[i][0])
         i += 1
     proc = open(PROCESS_FILE, "w")
@@ -491,7 +466,6 @@ def errorToJson(errors):
         element = {'error': i}
         jErrors.append(element)
     return jErrors
-
 
 # Routes of the rest server
 app = Flask(__name__)
@@ -521,10 +495,8 @@ def index():
 #  here will be the maude errors"
 # }
 @app.route('/runsccp', methods=['POST'])
-def runsccp():
-    global ntccTime
+def runSCCP():
     global processes
-    ntccTime = getNtccTime()
     refreshState()
     received = request.json['config']
     print "process: " + received
@@ -535,8 +507,6 @@ def runsccp():
             'result': 'error',
             'errors': [{'error': 'empty input'}]
         })
-    received = eraseSpacePostAndSay(received, "post")
-    received = eraseSpacePostAndSay(received, "say")
     received = addIdAndOrder(received, userP)
     received = addTagVote(received, userP)
     try:
@@ -565,7 +535,7 @@ def runsccp():
     else:
         saveState(answer[1])
         if timeunit == "1":
-            ntccTictac(ntccTime)
+            ntccTicTac()
         return jsonify({'result': 'ok'})
 
 
@@ -590,7 +560,6 @@ def getSpace():
 # This function returns the global memory
 @app.route('/getGlobal', methods=['GET'])
 def getGlobal():
-    # answer = getCurrentAgent(memory)
     parsingResult = parse("{}[{}]", memory)
     if parsingResult[0] is None:
         return jsonify({'result': 'Empty'})
@@ -602,4 +571,6 @@ def getGlobal():
 
 # Version 30/05/2018 8:18pm
 if __name__ == '__main__':
+    updateNtccTime()
+    refreshState()
     app.run(host='0.0.0.0', port=8082)
