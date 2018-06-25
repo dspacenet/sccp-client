@@ -20,11 +20,11 @@ def getNtccTime():
 maude = MaudeProcess()
 nameinput = systemfiles+"run.txt"
 nameoutput = systemfiles+"output.txt"
-namememory = systemfiles+"memory.txt"
-nameprocess = systemfiles+"process.txt"
+MEMORY_FILE = systemfiles+"memory.txt"
+PROCESS_FILE = systemfiles+"process.txt"
 memory = ""
 processes = ""
-ntcctime = getNtccTime()
+ntccTime = getNtccTime()
 memoryDictionary = {}
 notBusy = True
 
@@ -84,7 +84,6 @@ def storeMemory(mem):
 
 
 def getClocks():
-    global memoryDictionary
     base = "0."
     i = 0
     space = base+str(i)
@@ -97,7 +96,6 @@ def getClocks():
 
 
 def getNotifications():
-    global memoryDictionary
     base = "0."
     i = 0
     space = base+str(i)
@@ -136,16 +134,14 @@ def eraseSpacePostAndSay(program, searchingString):
 # output: program -> process tagged, changing
 # <pid| with the pid of this time unit
 def addPid(program):
-    global ntcctime
-    pidStr = '<pid|'
-    index = program.find(pidStr)
+    index = program.find('<pid|')
     oldindex = 0
     while index != -1:
         index = oldindex+index+1
-        pid = str(ntcctime)
+        pid = str(ntccTime)
         program = program[:index]+pid+program[index+3:]
         oldindex = index+len(pid)
-        index = program[oldindex:].find(pidStr)
+        index = program[oldindex:].find('<pid|')
     return program
 
 
@@ -156,26 +152,24 @@ def addPid(program):
 # output: program -> process tagged, changing
 # <usn| with the username in the input
 def addUser(program, user):
-    userstr = '|usn>'
-    index = program.find(userstr)
+    index = program.find('|usn>')
     oldindex = 0
     while index != -1:
         index = oldindex+index+1
         program = program[:index]+user+program[index+3:]
         oldindex = index+len(user)
-        index = program[oldindex:].find(userstr)
+        index = program[oldindex:].find('|usn>')
     return program
 
 
 def addAtUser(program, user):
-    userstr = 'usn'
-    index = program.find(userstr)
+    index = program.find('usn')
     oldindex = 0
     while index != -1:
         index = oldindex+index+1
         program = program[:index-1]+user+program[index+2:]
         oldindex = index+len(user)
-        index = program[oldindex:].find(userstr)
+        index = program[oldindex:].find('usn')
     return program
 
 
@@ -184,16 +178,14 @@ def addAtUser(program, user):
 # output: program -> process tagged, changing
 # {pid} with the pid of this time unit
 def addPidPosted(program):
-    global ntcctime
-    pidStr = '{pid}'
-    index = program.find(pidStr)
+    index = program.find('{pid}')
     oldindex = 0
     while index != -1:
         index = oldindex+index
-        pid = str(ntcctime)
+        pid = str(ntccTime)
         program = program[:index]+pid+program[index+5:]
         oldindex = index+len(pid)
-        index = program[oldindex:].find(pidStr)
+        index = program[oldindex:].find('{pid}')
     return program
 
 
@@ -211,15 +203,14 @@ def ntccTictac(c):
 # output: program -> process tagged, adding clock and username
 # to the messages
 def addIdAndOrder(program, id_user):
-    tellstr = 'post("'
-    index = program.find(tellstr)
+    index = program.find('post("')
     oldindex = 0
     while index != -1:
         index = oldindex+index+6
         userstr = "<pids|p|" + str(id_user)+">"
         program = program[:index]+userstr+program[index:]
         oldindex = index+len(userstr)
-        index = program[oldindex:].find(tellstr)
+        index = program[oldindex:].find('post("')
     program = addIdAndOrderSignal(program, id_user)
     return program
 
@@ -230,15 +221,14 @@ def addIdAndOrder(program, id_user):
 # output: program -> process tagged, adding clock and username
 # to the messages
 def addTagVote(program, id_user):
-    tellstr = 'vote("'
-    index = program.find(tellstr)
+    index = program.find('vote("')
     oldindex = 0
     while index != -1:
         index = oldindex+index+6
         userstr = "<pids|v|" + str(id_user)+">"
         program = program[:index]+userstr+program[index:]
         oldindex = index+len(userstr)
-        index = program[oldindex:].find(tellstr)
+        index = program[oldindex:].find('vote("')
     program = addIdAndOrderSignal(program, id_user)
     return program
 
@@ -249,17 +239,16 @@ def addTagVote(program, id_user):
 # output: program -> process tagged, adding clock and username
 # to the messages
 def addIdAndOrderSignal(program, id_user):
-    global ntcctime
-    tellstr = 'signal("'
-    index = program.find(tellstr)
+    global ntccTime
+    index = program.find('signal("')
     oldindex = 0
-    ntcctime = getNtccTime()
+    ntccTime = getNtccTime()
     while index != -1:
-        index = oldindex+index+8
+        index = oldindex + index + 8
         userstr = "<pids|s|" + str(id_user)+">"
-        program = program[:index]+userstr+program[index:]
-        oldindex = index+len(userstr)
-        index = program[oldindex:].find(tellstr)
+        program = program[:index] + userstr + program[index:]
+        oldindex = index + len(userstr)
+        index = program[oldindex:].find('signal("')
     return program
 
 
@@ -269,25 +258,23 @@ def addIdAndOrderSignal(program, id_user):
 # output: program -> process tagged, adding clock and username
 # to the messages
 def addIdAndOrderSay(program, id_user):
-    global ntcctime
-    tellstr = 'say("'
-    index = program.find(tellstr)
+    global ntccTime
+    index = program.find('say("')
     oldindex = 0
-    ntcctime = getNtccTime()
+    ntccTime = getNtccTime()
     while index != -1:
-        index = oldindex+index+5
+        index = oldindex + index + 5
         userstr = "<pid|s|" + str(id_user)+">"
-        program = program[:index]+userstr+program[index:]
-        oldindex = index+len(userstr)
-        index = program[oldindex:].find(tellstr)
+        program = program[:index] + userstr + program[index:]
+        oldindex = index + len(userstr)
+        index = program[oldindex:].find('say("')
     program = addIdAndOrderSignal(program, id_user)
     return program
 
 
 # Function that extract the information of a string that contains a message
 def extractInfo(msg):
-    global ntcctime
-    clock = ntcctime
+    clock = ntccTime
     parseResult = parse('<{}>{}', msg)
     if parseResult is None:
         if msg.find("{pid") == -1:
@@ -323,16 +310,14 @@ def extractInfo(msg):
 # Procedure that load the current state from the txt files
 # to the global variables that represent the current memory and processes
 def refreshState():
-    global namememory
-    global nameprocess
-    mem = open(namememory, "r")
-    proc = open(nameprocess, "r")
     global processes
     global memory
-    processes = proc.readline()
-    memory = mem.readline()
-    mem.close()
-    proc.close()
+    memoryFile = open(MEMORY_FILE, "r")
+    processFile = open(PROCESS_FILE, "r")
+    processes = processFile.readline()
+    memory = memoryFile.readline()
+    memoryFile.close()
+    processFile.close()
 
 refreshState()
 
@@ -468,16 +453,16 @@ def createClock(path, timer):
 # Procedure that store a successful execution on the memory and processes txt
 # files
 def saveState(result):
-    global ntcctime
-    ntcctime = getNtccTime()
+    global ntccTime
     global processes
     global memory
     global memoryDictionary
+    ntccTime = getNtccTime()
     parsingResult = parse("result Conf: < {} ; {} >", result)
     processes = parsingResult[0]
     memory = parsingResult[1]
-    memory = replacePidAfter(memory, ntcctime)
-    mem = open(namememory, "w")
+    memory = replacePidAfter(memory, ntccTime)
+    mem = open(MEMORY_FILE, "w")
     mem.write(memory)
     mem.close()
     memoryDictionary = {}
@@ -491,7 +476,7 @@ def saveState(result):
         if clocks[i] != None and clocks[i][0] != '':
             createClock(i, clocks[i][0])
         i += 1
-    proc = open(nameprocess, "w")
+    proc = open(PROCESS_FILE, "w")
     proc.write(processes)
     proc.close()
 
@@ -537,71 +522,55 @@ def index():
 # }
 @app.route('/runsccp', methods=['POST'])
 def runsccp():
-    global notBusy
-    notBusy = True
-    if notBusy:
-        global ntcctime
-        ntcctime = getNtccTime()
-        global processes
-        global memory
-        global maude
-        refreshState()
-        received = request.json['config']
-        print "process: " + received
-        userP = request.json['user']
-        timeunit = str(request.json['timeu'])
-        if received == "":
-            notBusy = True
-            return jsonify({
-                'result': 'error',
-                'errors': [{'error': 'empty input'}]
-            })
-        received = eraseSpacePostAndSay(received, "post")
-        received = eraseSpacePostAndSay(received, "say")
-        received = addIdAndOrder(received, userP)
-        received = addTagVote(received, userP)
-        try:
-            str(received)
-        except:
-            errors = errorToJson(["characters not allowed"])
-            notBusy = True
-            return jsonify({'result': 'error', 'errors': errors})
-        maude.run("red in SCCP-RUN : "+received+" . \n")
-        answer = maude.getOutput()
-        if answer[0] == "error":
-            errors = errorToJson(answer[1])
-            notBusy = True
-            return jsonify({'result': 'error', 'errors': errors})
-        else:
-            parsingResult = parse("result SpaInstruc: {}", answer[1])
-            received = parsingResult[0]
-        received = addPid(received)
-        received = addPidPosted(received)
-        received = addUser(received, userP)
-        received = addAtUser(received, userP)
-        processes = received + " || " + processes
-        maude.run("red in NTCC-RUN : IO(< "+processes+" ; "+memory+" >) . \n")
-        answer = maude.getOutput()
-        if answer[0] == "error":
-            errors = errorToJson(answer[1])
-            notBusy = True
-            return jsonify({'result': 'error', 'errors': errors})
-        else:
-            saveState(answer[1])
-            if timeunit == "1":
-                ntccTictac(ntcctime)
-            notBusy = True
-            return jsonify({'result': 'ok'})
-    else:
+    global ntccTime
+    global processes
+    ntccTime = getNtccTime()
+    refreshState()
+    received = request.json['config']
+    print "process: " + received
+    userP = request.json['user']
+    timeunit = str(request.json['timeu'])
+    if received == "":
         return jsonify({
             'result': 'error',
-            'errors': [{'error': "busy, try again"}]
+            'errors': [{'error': 'empty input'}]
         })
+    received = eraseSpacePostAndSay(received, "post")
+    received = eraseSpacePostAndSay(received, "say")
+    received = addIdAndOrder(received, userP)
+    received = addTagVote(received, userP)
+    try:
+        str(received)
+    except:
+        errors = errorToJson(["characters not allowed"])
+        return jsonify({'result': 'error', 'errors': errors})
+    maude.run("red in SCCP-RUN : "+received+" . \n")
+    answer = maude.getOutput()
+    if answer[0] == "error":
+        errors = errorToJson(answer[1])
+        return jsonify({'result': 'error', 'errors': errors})
+    else:
+        parsingResult = parse("result SpaInstruc: {}", answer[1])
+        received = parsingResult[0]
+    received = addPid(received)
+    received = addPidPosted(received)
+    received = addUser(received, userP)
+    received = addAtUser(received, userP)
+    processes = received + " || " + processes
+    maude.run("red in NTCC-RUN : IO(< "+processes+" ; "+memory+" >) . \n")
+    answer = maude.getOutput()
+    if answer[0] == "error":
+        errors = errorToJson(answer[1])
+        return jsonify({'result': 'error', 'errors': errors})
+    else:
+        saveState(answer[1])
+        if timeunit == "1":
+            ntccTictac(ntccTime)
+        return jsonify({'result': 'ok'})
 
 
 @app.route('/getSpace', methods=['POST'])
 def getSpace():
-    global memoryDictionary
     agent = request.json['id']
     path = "0"
     for i in agent:
@@ -621,7 +590,6 @@ def getSpace():
 # This function returns the global memory
 @app.route('/getGlobal', methods=['GET'])
 def getGlobal():
-    global memory
     # answer = getCurrentAgent(memory)
     parsingResult = parse("{}[{}]", memory)
     if parsingResult[0] is None:
