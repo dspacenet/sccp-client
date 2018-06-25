@@ -18,7 +18,7 @@ ntccTime = 0
 memoryDictionary = {}
 
 
-def updateNtccTime():
+def setNtccTime():
     """
     This function get the ntcc time counter, it's stored in a txt file
     """
@@ -629,6 +629,7 @@ def getGlobal():
 
 # Version 30/05/2018 8:18pm
 if __name__ == '__main__':
-    updateNtccTime()
+    setNtccTime()
     refreshState()
+    storeMemory(memory)
     app.run(host='0.0.0.0', port=8082)
