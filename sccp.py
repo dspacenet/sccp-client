@@ -115,79 +115,6 @@ def getNotifications():
 def storeNotifications(notifications):
     return 0
 
-
-def addPid(program):
-    """Function for adding the program id to a new process
-
-    Arguments:
-        program {string} -- process without tags
-
-    Returns:
-        string -- process tagged, changing <pid| with the pid of this time unit
-    """
-    index = program.find('<pid|')
-    oldindex = 0
-    while index != -1:
-        index = oldindex+index+1
-        pid = str(ntccTime)
-        program = program[:index]+pid+program[index+3:]
-        oldindex = index+len(pid)
-        index = program[oldindex:].find('<pid|')
-    return program
-
-
-def addUser(program, user):
-    """Function for adding the user to a new process
-
-    Arguments:
-        program {string} -- process without tags
-        user {string} -- the user that will be added to the process
-
-    Returns:
-        string -- process tagged, changing with the username in the input
-    """
-    index = program.find('|usn>')
-    oldindex = 0
-    while index != -1:
-        index = oldindex+index+1
-        program = program[:index]+user+program[index+3:]
-        oldindex = index+len(user)
-        index = program[oldindex:].find('|usn>')
-    return program
-
-
-def addAtUser(program, user):
-    index = program.find('usn')
-    oldindex = 0
-    while index != -1:
-        index = oldindex+index+1
-        program = program[:index-1]+user+program[index+2:]
-        oldindex = index+len(user)
-        index = program[oldindex:].find('usn')
-    return program
-
-
-def addPidPosted(program):
-    """Function for adding the program id to a new process
-
-    Arguments:
-        program {string} -- process without tags
-
-    Returns:
-        string -- process tagged, changing {pid} with the pid of this time unit
-    """
-
-    index = program.find('{pid}')
-    oldindex = 0
-    while index != -1:
-        index = oldindex+index
-        pid = str(ntccTime)
-        program = program[:index]+pid+program[index+5:]
-        oldindex = index+len(pid)
-        index = program[oldindex:].find('{pid}')
-    return program
-
-
 def ntccTicTac():
     """
     Function that increase the ntcc time counter
@@ -424,28 +351,6 @@ def calculateAgentMemory(agentId):
     return agents
 
 
-def replacePidAfter(memory, timeunit):
-    """Function for adding the program id and user to every post in a process
-
-    Arguments:
-        memory {string} -- memory without current pid
-        timeunit {int} -- current timeunit
-
-    Returns:
-        [type] -- memory with current pid
-    """
-    timeunit = str(timeunit)
-    pidStr = '<pids|'
-    index = memory.find(pidStr)
-    oldindex = 0
-    while index != -1:
-        index = oldindex+index+1
-        memory = memory[:index]+timeunit+memory[index+4:]
-        oldindex = index+len(timeunit)
-        index = memory[oldindex:].find(pidStr)
-    return memory
-
-
 def createClock(path, timer):
     cron = CronTab(user='dspacenet')
     path = str(path)
@@ -467,13 +372,11 @@ def saveState(result):
     global processes
     global memory
     global memoryDictionary
-    parsingResult = parse("result Conf: < {} ; {} >", result)
-    processes = parsingResult[0]
-    memory = parsingResult[1]
-    memory = replacePidAfter(memory, ntccTime)
-    mem = open(MEMORY_FILE, "w")
-    mem.write(memory)
-    mem.close()
+    processes, memory = parse("result Conf: < {} ; {} >", result)
+    memory = memory.replace('<pids|', '<'+str(ntccTime)+'|')
+    memoryFile = open(MEMORY_FILE, "w")
+    memoryFile.write(memory)
+    memoryFile.close()
     memoryDictionary = {}
     storeMemory(memory)
     clocks = getClocks()
@@ -484,9 +387,9 @@ def saveState(result):
         if clocks[i] is not None and clocks[i][0] != '':
             createClock(i, clocks[i][0])
         i += 1
-    proc = open(PROCESS_FILE, "w")
-    proc.write(processes)
-    proc.close()
+    processesFile = open(PROCESS_FILE, "w")
+    processesFile.write(processes)
+    processesFile.close()
 
 
 def errorToJson(errors):
@@ -534,35 +437,36 @@ def index():
 @app.route('/runsccp', methods=['POST'])
 def runSCCP():
     global processes
-    received = request.json['config']
-    print "Running process: " + received
-    userP = request.json['user']
-    timeunit = str(request.json['timeu'])
-    if received == "":
+    program = request.json['config']
+    print "Running process: " + program
+    user = request.json['user']
+    updateClock = str(request.json['timeu'])
+    if program == "":
         return jsonify({
             'result': 'error',
             'errors': [{'error': 'empty input'}]
         })
-    received = addIdAndOrder(received, userP)
-    received = addTagVote(received, userP)
+    program = addIdAndOrder(program, user)
+    program = addTagVote(program, user)
+    print "Patched Program: " + program
     try:
-        str(received)
+        str(program)
     except:
         errors = errorToJson(["characters not allowed"])
         return jsonify({'result': 'error', 'errors': errors})
-    maude.run("red in SCCP-RUN : "+received+" . \n")
+    maude.run("red in SCCP-RUN : "+program+" . \n")
     answer = maude.getOutput()
     if answer[0] == "error":
         errors = errorToJson(answer[1])
         return jsonify({'result': 'error', 'errors': errors})
     else:
         parsingResult = parse("result SpaInstruc: {}", answer[1])
-        received = parsingResult[0]
-    received = addPid(received)
-    received = addPidPosted(received)
-    received = addUser(received, userP)
-    received = addAtUser(received, userP)
-    processes = received + " || " + processes
+        program = parsingResult[0]
+    program = program.replace('<pid|','<'+str(ntccTime)+'|')
+    program = program.replace('{pid}', str(ntccTime))
+    program = program.replace('|usn>','|'+user+'>')
+    program = program.replace('usn', user)
+    processes = program + " || " + processes
     maude.run("red in NTCC-RUN : IO(< "+processes+" ; "+memory+" >) . \n")
     answer = maude.getOutput()
     if answer[0] == "error":
@@ -570,7 +474,7 @@ def runSCCP():
         return jsonify({'result': 'error', 'errors': errors})
     else:
         saveState(answer[1])
-        if timeunit == "1":
+        if updateClock == "1":
             ntccTicTac()
         return jsonify({'result': 'ok'})
 
