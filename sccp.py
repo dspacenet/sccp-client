@@ -264,28 +264,6 @@ def addIdAndOrderSignal(program, id_user):
     return program
 
 
-def addIdAndOrderSay(program, id_user):
-    """Function for adding the program id and user to every say in a process
-
-    Arguments:
-        program {string} -- process without tags
-        id_user {string} -- username of the user who post the process
-
-    Returns:
-        string -- process tagged, adding clock and username
-    """
-    index = program.find('say("')
-    oldindex = 0
-    while index != -1:
-        index = oldindex + index + 5
-        userstr = "<pid|s|" + str(id_user)+">"
-        program = program[:index] + userstr + program[index:]
-        oldindex = index + len(userstr)
-        index = program[oldindex:].find('say("')
-    program = addIdAndOrderSignal(program, id_user)
-    return program
-
-
 def extractInfo(msg):
     """Function that extract the information of a string that contains a message
 
@@ -557,7 +535,7 @@ def index():
 def runSCCP():
     global processes
     received = request.json['config']
-    print "process: " + received
+    print "Running process: " + received
     userP = request.json['user']
     timeunit = str(request.json['timeu'])
     if received == "":
