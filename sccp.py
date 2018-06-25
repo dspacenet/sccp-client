@@ -436,7 +436,6 @@ def calculateAgentMemory(agentId):
     Returns:
         string -- the agent memory
     """
-    refreshState()
     parsingResult = parse("{}[{}]", memory)
     agents = parsingResult[1]
     while agentId > 0:
@@ -557,7 +556,6 @@ def index():
 @app.route('/runsccp', methods=['POST'])
 def runSCCP():
     global processes
-    refreshState()
     received = request.json['config']
     print "process: " + received
     userP = request.json['user']
