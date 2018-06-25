@@ -7,32 +7,37 @@ import os
 # Structure of messages: "<clock,id_user>message"
 # System files are located inside the following directory
 systemfiles = "~systemfiles/"
+MEMORY_FILE = systemfiles+"memory.txt"
+PROCESS_FILE = systemfiles+"process.txt"
 
 
-# This function get the ntcc time counter, it's stored in a txt file
+# Definition of some global variables
+maude = MaudeProcess()
+memory = ""
+ntccTime = 0
+memoryDictionary = {}
+
+
 def updateNtccTime():
+    """
+    This function get the ntcc time counter, it's stored in a txt file
+    """
     global ntccTime
     cl = open(systemfiles+"ntcctime.txt", "r")
     time = cl.readline()
     cl.close()
     ntccTime = int(time)
 
-# Definition of some global variables
-maude = MaudeProcess()
-nameinput = systemfiles+"run.txt"
-nameoutput = systemfiles+"output.txt"
-MEMORY_FILE = systemfiles+"memory.txt"
-PROCESS_FILE = systemfiles+"process.txt"
-memory = ""
-ntccTime = 0
-memoryDictionary = {}
-notBusy = True
 
-
-# Function that obtains every message inside a string of messages from the
-# memory of an agent stringMessages: '"message 1", "message 2", "message 3" ...
-# ' return: ['message 1', 'message 2', 'message 3' ...]
 def splitMessages(stringMessages):
+    """
+    Function that obtains every message inside a string of messages from the
+    memory of an agent
+
+    Arguments: stringMessages {string} -- '"message 1", "message 2"...'
+
+    Returns: [string] -- ['message 1', 'message 2', 'message 3' ...]
+    """
     messages = []
     message = ""
     quotecounter = 0
@@ -111,11 +116,15 @@ def storeNotifications(notifications):
     return 0
 
 
-# Function for adding the program id to a new process
-# input: program -> process without tags
-# output: program -> process tagged, changing
-# <pid| with the pid of this time unit
 def addPid(program):
+    """Function for adding the program id to a new process
+
+    Arguments:
+        program {string} -- process without tags
+
+    Returns:
+        string -- process tagged, changing <pid| with the pid of this time unit
+    """
     index = program.find('<pid|')
     oldindex = 0
     while index != -1:
@@ -127,13 +136,16 @@ def addPid(program):
     return program
 
 
-# Function for adding the user to a new process
-# input:
-# program -> process without tags
-# user -> the user that will be added to the process
-# output: program -> process tagged, changing
-# <usn| with the username in the input
 def addUser(program, user):
+    """Function for adding the user to a new process
+
+    Arguments:
+        program {string} -- process without tags
+        user {string} -- the user that will be added to the process
+
+    Returns:
+        string -- process tagged, changing with the username in the input
+    """
     index = program.find('|usn>')
     oldindex = 0
     while index != -1:
@@ -155,11 +167,16 @@ def addAtUser(program, user):
     return program
 
 
-# Function for adding the program id to a new process
-# input: program -> process without tags
-# output: program -> process tagged, changing
-# {pid} with the pid of this time unit
 def addPidPosted(program):
+    """Function for adding the program id to a new process
+
+    Arguments:
+        program {string} -- process without tags
+
+    Returns:
+        string -- process tagged, changing {pid} with the pid of this time unit
+    """
+
     index = program.find('{pid}')
     oldindex = 0
     while index != -1:
@@ -171,8 +188,10 @@ def addPidPosted(program):
     return program
 
 
-# Function that increase the ntcc time counter
 def ntccTicTac():
+    """
+    Function that increase the ntcc time counter
+    """
     global ntccTime
     ntccTime += 1
     cl = open(systemfiles+"ntcctime.txt", "w")
@@ -180,12 +199,16 @@ def ntccTicTac():
     cl.close()
 
 
-# Function for adding the program id and user to every post in a process
-# input: program -> process without tags
-# input: id_user -> username of the user who post the process
-# output: program -> process tagged, adding clock and username
-# to the messages
 def addIdAndOrder(program, id_user):
+    """Function for adding the program id and user to every post in a process
+
+    Arguments:
+        program {string} -- process without tags
+        id_user {string} -- username of the user who post the process
+
+    Returns:
+        string -- process tagged, adding clock and username to the messages
+    """
     index = program.find('post("')
     oldindex = 0
     while index != -1:
@@ -198,12 +221,16 @@ def addIdAndOrder(program, id_user):
     return program
 
 
-# Function for adding the program id and user to every post in a process
-# input: program -> process without tags
-# input: id_user -> username of the user who post the process
-# output: program -> process tagged, adding clock and username
-# to the messages
 def addTagVote(program, id_user):
+    """Function for adding the program id and user to every post in a process
+
+    Arguments:
+        program {string} -- process without tags
+        id_user {string} -- username of the user who post the process
+
+    Returns:
+        string -- process tagged, adding clock and username to the messages
+    """
     index = program.find('vote("')
     oldindex = 0
     while index != -1:
@@ -216,12 +243,16 @@ def addTagVote(program, id_user):
     return program
 
 
-# Function for adding the program id and user to every say in a process
-# input: program -> process without tags
-# input: id_user -> username of the user who post the process
-# output: program -> process tagged, adding clock and username
-# to the messages
 def addIdAndOrderSignal(program, id_user):
+    """Function for adding the program id and user to every say in a process
+
+    Arguments:
+        program {string} -- process without tags
+        id_user {string} -- username of the user who post the process
+
+    Returns:
+        string -- process tagged, adding clock and username to the messages
+    """
     index = program.find('signal("')
     oldindex = 0
     while index != -1:
@@ -233,12 +264,16 @@ def addIdAndOrderSignal(program, id_user):
     return program
 
 
-# Function for adding the program id and user to every say in a process
-# input: program -> process without tags
-# input: id_user -> username of the user who post the process
-# output: program -> process tagged, adding clock and username
-# to the messages
 def addIdAndOrderSay(program, id_user):
+    """Function for adding the program id and user to every say in a process
+
+    Arguments:
+        program {string} -- process without tags
+        id_user {string} -- username of the user who post the process
+
+    Returns:
+        string -- process tagged, adding clock and username
+    """
     index = program.find('say("')
     oldindex = 0
     while index != -1:
@@ -251,8 +286,15 @@ def addIdAndOrderSay(program, id_user):
     return program
 
 
-# Function that extract the information of a string that contains a message
 def extractInfo(msg):
+    """Function that extract the information of a string that contains a message
+
+    Arguments:
+        msg {string} -- original message
+
+    Returns:
+        string -- message extracted
+    """
     clock = ntccTime
     parseResult = parse('<{}>{}', msg)
     if parseResult is None:
@@ -260,8 +302,8 @@ def extractInfo(msg):
             r = {
                 'clock': clock,
                 'user_msg': "private",
-                'msg': msg, 'class':
-                "system"
+                'msg': msg,
+                'class': "system"
             }
         else:
             msg = msg.replace("{", "[")
@@ -286,9 +328,11 @@ def extractInfo(msg):
     return r
 
 
-# Procedure that load the current state from the txt files
-# to the global variables that represent the current memory and processes
 def refreshState():
+    """
+    Procedure that load the current state from the txt files
+    to the global variables that represent the current memory and processes
+    """
     global processes
     global memory
     memoryFile = open(MEMORY_FILE, "r")
@@ -299,10 +343,16 @@ def refreshState():
     processFile.close()
 
 
-# Function that eliminate the first agent of the agents string
-# input: agents -> string with agents
-# output: agents -> string with agents, but without the first one
 def deleteOther(agents):
+    """Function that eliminate the first agent of the agents string
+
+    Arguments:
+        agents {string} -- string with agents
+
+    Returns:
+        string -- string with agents, but without the first one
+    """
+
     stack = []
     index = 0
     for i in agents:
@@ -325,10 +375,15 @@ def deleteOther(agents):
     return agents[index:]
 
 
-# Function that choose the first agent of the agents string
-# input: agents -> string with agents
-# output: agents -> the first agent on the string
 def getCurrentAgent(agents):
+    """Function that choose the first agent of the agents string
+
+    Arguments:
+        agents {string} -- string with agents
+
+    Returns:
+        string -- the first agent on the string
+    """
     stack = []
     index = 0
     for i in agents:
@@ -350,15 +405,20 @@ def getCurrentAgent(agents):
     return agents[:index]
 
 
-# Function that convert the agent memory in a json list with every message with
-# their information
 def convertMemInJson(mem):
+    """
+    Function that convert the agent memory in a json list with every message
+    with their information
+
+    Arguments: mem {Dict} -- memory dictionary
+
+    Returns: string -- JSON string
+    """
     messages = "error"
     memParse = parse("({})", mem)
     if memParse is not None:
         messages = splitMessages(memParse[0])
     else:
-
         messages = [mem[1:len(mem)-1]]
     jMessages = []
     for i in messages:
@@ -367,42 +427,36 @@ def convertMemInJson(mem):
     return jMessages
 
 
-# Function that go through on the memory, searching the space of an agent
-# input: agentId -> id of the agent that want to calculate
-# output: agents -> the agent memory
 def calculateAgentMemory(agentId):
+    """Function that go through on the memory, searching the space of an agent
+
+    Arguments:
+        agentId {int} -- id of the agent that want to calculate
+
+    Returns:
+        string -- the agent memory
+    """
     refreshState()
     parsingResult = parse("{}[{}]", memory)
     agents = parsingResult[1]
-
     while agentId > 0:
         agents = deleteOther(agents)
-        agentId = agentId-1
+        agentId -= 1
     agents = getCurrentAgent(agents)
 
     return agents
 
 
-# Function that go through on the memory, searching the space of an agent
-# input: store -> the store of the system
-# input: agentId -> id of the agent that want to calculate
-# output: agents -> the agent memory
-def calculateAgentMemoryAlpha(store, agentId):
-    parsingResult = parse("{}[{}]", store)
-    agents = parsingResult[1]
-    while agentId > 0:
-        agents = deleteOther(agents)
-        agentId = agentId-1
-    agents = getCurrentAgent(agents)
-    return agents
-
-
-# Function for adding the program id and user to every post in a process
-# input: memory -> memory without current pid
-# input: timeunit -> current timeunit
-# output: memory -> memory with current pid
-# on posts
 def replacePidAfter(memory, timeunit):
+    """Function for adding the program id and user to every post in a process
+
+    Arguments:
+        memory {string} -- memory without current pid
+        timeunit {int} -- current timeunit
+
+    Returns:
+        [type] -- memory with current pid
+    """
     timeunit = str(timeunit)
     pidStr = '<pids|'
     index = memory.find(pidStr)
@@ -427,9 +481,12 @@ def createClock(path, timer):
     cron.write()
 
 
-# Procedure that store a successful execution on the memory and processes txt
-# files
 def saveState(result):
+    """Procedure that store a successful execution on the memory and processes txt
+
+    Arguments:
+        result {string} -- result of the execution
+    """
     global processes
     global memory
     global memoryDictionary
@@ -445,7 +502,6 @@ def saveState(result):
     clocks = getClocks()
     # notifications = getNotifications()
     # mergeNotifications(notifications)
-    print clocks
     i = 0
     while i < len(clocks):
         if clocks[i] is not None and clocks[i][0] != '':
@@ -456,11 +512,15 @@ def saveState(result):
     proc.close()
 
 
-# Function that get a list of errors and convert it
-# into a list of errors in json.
-# input: [error1,error2,...,errorN]
-# output: [{'error': error1, 'error': error2...,'errorN': errorN}]
 def errorToJson(errors):
+    """
+    Function that gets a list of errors and converts it into a list of errors
+    in json.
+
+    Arguments: errors {[type]} -- [error1,error2,...,errorN]
+
+    Returns: [type] -- [{'error': error1, 'error': error2...,'errorN': errorN}]
+    """
     jErrors = []
     for i in errors:
         element = {'error': i}
