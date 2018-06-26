@@ -100,21 +100,6 @@ def getClocks():
     return clocks
 
 
-def getNotifications():
-    base = "0."
-    i = 0
-    space = base+str(i)
-    notifications = []
-    while memoryDictionary.get(space) is not None:
-        i += 1
-        notifications.append(memoryDictionary.get(space+".10"))
-        space = base+str(i)
-    return notifications
-
-
-def storeNotifications(notifications):
-    return 0
-
 def ntccTicTac():
     """
     Function that increase the ntcc time counter
@@ -124,71 +109,6 @@ def ntccTicTac():
     cl = open(systemfiles+"ntcctime.txt", "w")
     cl.write(str(ntccTime))
     cl.close()
-
-
-def addIdAndOrder(program, id_user):
-    """Function for adding the program id and user to every post in a process
-
-    Arguments:
-        program {string} -- process without tags
-        id_user {string} -- username of the user who post the process
-
-    Returns:
-        string -- process tagged, adding clock and username to the messages
-    """
-    index = program.find('post("')
-    oldindex = 0
-    while index != -1:
-        index = oldindex+index+6
-        userstr = "<pids|p|" + str(id_user)+">"
-        program = program[:index]+userstr+program[index:]
-        oldindex = index+len(userstr)
-        index = program[oldindex:].find('post("')
-    program = addIdAndOrderSignal(program, id_user)
-    return program
-
-
-def addTagVote(program, id_user):
-    """Function for adding the program id and user to every post in a process
-
-    Arguments:
-        program {string} -- process without tags
-        id_user {string} -- username of the user who post the process
-
-    Returns:
-        string -- process tagged, adding clock and username to the messages
-    """
-    index = program.find('vote("')
-    oldindex = 0
-    while index != -1:
-        index = oldindex+index+6
-        userstr = "<pids|v|" + str(id_user)+">"
-        program = program[:index]+userstr+program[index:]
-        oldindex = index+len(userstr)
-        index = program[oldindex:].find('vote("')
-    program = addIdAndOrderSignal(program, id_user)
-    return program
-
-
-def addIdAndOrderSignal(program, id_user):
-    """Function for adding the program id and user to every say in a process
-
-    Arguments:
-        program {string} -- process without tags
-        id_user {string} -- username of the user who post the process
-
-    Returns:
-        string -- process tagged, adding clock and username to the messages
-    """
-    index = program.find('signal("')
-    oldindex = 0
-    while index != -1:
-        index = oldindex + index + 8
-        userstr = "<pids|s|" + str(id_user)+">"
-        program = program[:index] + userstr + program[index:]
-        oldindex = index + len(userstr)
-        index = program[oldindex:].find('signal("')
-    return program
 
 
 def extractInfo(msg):
@@ -248,68 +168,6 @@ def refreshState():
     processFile.close()
 
 
-def deleteOther(agents):
-    """Function that eliminate the first agent of the agents string
-
-    Arguments:
-        agents {string} -- string with agents
-
-    Returns:
-        string -- string with agents, but without the first one
-    """
-
-    stack = []
-    index = 0
-    for i in agents:
-        if i != '[':
-            index += 1
-        else:
-            index += 1
-            stack.append("[")
-            break
-    while index < len(agents):
-        i = agents[index]
-        if i == '[':
-            stack.append("[")
-        elif i == ']':
-            stack.pop(0)
-        index += 1
-        if len(stack) == 0:
-            break
-    index += 3
-    return agents[index:]
-
-
-def getCurrentAgent(agents):
-    """Function that choose the first agent of the agents string
-
-    Arguments:
-        agents {string} -- string with agents
-
-    Returns:
-        string -- the first agent on the string
-    """
-    stack = []
-    index = 0
-    for i in agents:
-        if i != '[':
-            index += 1
-        else:
-            index += 1
-            stack.append("[")
-            break
-    while index < len(agents):
-        i = agents[index]
-        if i == '[':
-            stack.append("[")
-        elif i == ']':
-            stack.pop(0)
-        index += 1
-        if len(stack) == 0:
-            break
-    return agents[:index]
-
-
 def convertMemInJson(mem):
     """
     Function that convert the agent memory in a json list with every message
@@ -330,25 +188,6 @@ def convertMemInJson(mem):
         jMessages.append(extractInfo(i))
 
     return jMessages
-
-
-def calculateAgentMemory(agentId):
-    """Function that go through on the memory, searching the space of an agent
-
-    Arguments:
-        agentId {int} -- id of the agent that want to calculate
-
-    Returns:
-        string -- the agent memory
-    """
-    parsingResult = parse("{}[{}]", memory)
-    agents = parsingResult[1]
-    while agentId > 0:
-        agents = deleteOther(agents)
-        agentId -= 1
-    agents = getCurrentAgent(agents)
-
-    return agents
 
 
 def createClock(path, timer):
@@ -380,8 +219,6 @@ def saveState(result):
     memoryDictionary = {}
     storeMemory(memory)
     clocks = getClocks()
-    # notifications = getNotifications()
-    # mergeNotifications(notifications)
     i = 0
     while i < len(clocks):
         if clocks[i] is not None and clocks[i][0] != '':
@@ -438,7 +275,6 @@ def index():
 def runSCCP():
     global processes
     program = request.json['config']
-    print "Running process: " + program
     user = request.json['user']
     updateClock = str(request.json['timeu'])
     if program == "":
@@ -446,14 +282,12 @@ def runSCCP():
             'result': 'error',
             'errors': [{'error': 'empty input'}]
         })
-    program = addIdAndOrder(program, user)
-    program = addTagVote(program, user)
-    print "Patched Program: " + program
     try:
         str(program)
     except:
         errors = errorToJson(["characters not allowed"])
         return jsonify({'result': 'error', 'errors': errors})
+    print "Running process: " + program
     maude.run("red in SCCP-RUN : "+program+" . \n")
     answer = maude.getOutput()
     if answer[0] == "error":
