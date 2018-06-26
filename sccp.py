@@ -6,16 +6,17 @@ import os
 
 # Structure of messages: "<clock,id_user>message"
 # System files are located inside the following directory
-systemfiles = "~systemfiles/"
-MEMORY_FILE = systemfiles+"memory.txt"
-PROCESS_FILE = systemfiles+"process.txt"
+SYSTEM_FILES_PATH = "~systemfiles/"
+MEMORY_FILE = SYSTEM_FILES_PATH+"memory.txt"
+PROCESS_FILE = SYSTEM_FILES_PATH+"process.txt"
+NTCC_TIME_FILE = SYSTEM_FILES_PATH+"ntcctime.txt"
 
 
 # Definition of some global variables
 maude = MaudeProcess()
-memory = ""
+rawMemory = ""
 ntccTime = 0
-memoryDictionary = {}
+memory = {}
 
 
 def setNtccTime():
@@ -23,10 +24,9 @@ def setNtccTime():
     This function get the ntcc time counter, it's stored in a txt file
     """
     global ntccTime
-    cl = open(systemfiles+"ntcctime.txt", "r")
-    time = cl.readline()
-    cl.close()
-    ntccTime = int(time)
+    ntccTimeFile = open(NTCC_TIME_FILE, "r")
+    ntccTime = int(ntccTimeFile.readline())
+    ntccTimeFile.close()
 
 
 def splitMessages(stringMessages):
@@ -40,21 +40,21 @@ def splitMessages(stringMessages):
     """
     messages = []
     message = ""
-    quotecounter = 0
+    quoteCounter = 0
     for c in stringMessages:
         if c == '"':
-            quotecounter += 1
-        elif c == "," and quotecounter % 2 == 0:
+            quoteCounter += 1
+        elif c == "," and quoteCounter % 2 == 0:
             messages.append(message)
             message = ""
-        elif quotecounter % 2 != 0:
+        elif quoteCounter % 2 != 0:
             message = message+c
     messages.append(message)
     return messages
 
 
 def storeChild(memory, stack, i):
-    global memoryDictionary
+    global memory
     path = str(stack[0])
     for j in stack[1:]:
         path = path+"."+str(j)
@@ -63,7 +63,7 @@ def storeChild(memory, stack, i):
     if index != -1:
         agentString = agentString[:index]
         messages = splitMessages(agentString)
-        memoryDictionary[path] = messages
+        memory[path] = messages
     return index
 
 
@@ -93,9 +93,9 @@ def getClocks():
     i = 0
     space = base+str(i)
     clocks = []
-    while memoryDictionary.get(space) is not None:
+    while memory.get(space) is not None:
         i += 1
-        clocks.append(memoryDictionary.get(space+".6"))
+        clocks.append(memory.get(space+".6"))
         space = base+str(i)
     return clocks
 
@@ -106,9 +106,9 @@ def ntccTicTac():
     """
     global ntccTime
     ntccTime += 1
-    cl = open(systemfiles+"ntcctime.txt", "w")
-    cl.write(str(ntccTime))
-    cl.close()
+    ntccTimeFile = open(NTCC_TIME_FILE, "w")
+    ntccTimeFile.write(str(ntccTime))
+    ntccTimeFile.close()
 
 
 def extractInfo(msg):
@@ -158,35 +158,13 @@ def refreshState():
     to the global variables that represent the current memory and processes
     """
     global processes
-    global memory
+    global rawMemory
     memoryFile = open(MEMORY_FILE, "r")
     processFile = open(PROCESS_FILE, "r")
     processes = processFile.readline()
-    memory = memoryFile.readline()
+    rawMemory = memoryFile.readline()
     memoryFile.close()
     processFile.close()
-
-
-def convertMemInJson(mem):
-    """
-    Function that convert the agent memory in a json list with every message
-    with their information
-
-    Arguments: mem {Dict} -- memory dictionary
-
-    Returns: string -- JSON string
-    """
-    messages = "error"
-    memParse = parse("({})", mem)
-    if memParse is not None:
-        messages = splitMessages(memParse[0])
-    else:
-        messages = [mem[1:len(mem)-1]]
-    jMessages = []
-    for i in messages:
-        jMessages.append(extractInfo(i))
-
-    return jMessages
 
 
 def createClock(path, timer):
@@ -208,15 +186,15 @@ def saveState(result):
         result {string} -- result of the execution
     """
     global processes
+    global rawMemory
     global memory
-    global memoryDictionary
-    processes, memory = parse("result Conf: < {} ; {} >", result)
-    memory = memory.replace('<pids|', '<'+str(ntccTime)+'|')
+    processes, rawMemory = parse("result Conf: < {} ; {} >", result)
+    rawMemory = rawMemory.replace('<pids|', '<'+str(ntccTime)+'|')
     memoryFile = open(MEMORY_FILE, "w")
-    memoryFile.write(memory)
+    memoryFile.write(rawMemory)
     memoryFile.close()
-    memoryDictionary = {}
-    storeMemory(memory)
+    memory = {}
+    storeMemory(rawMemory)
     clocks = getClocks()
     i = 0
     while i < len(clocks):
@@ -257,44 +235,51 @@ def index():
 # }
 @app.route('/runsccp', methods=['POST'])
 def runSCCP():
+    # TODO: throw errors using HTTP status codes
     global processes
+    # Retrieve arguments from request
     program = request.json['config']
     user = request.json['user']
     updateClock = str(request.json['timeu'])
+    # Throw error if program is empty
     if program == "":
-        return jsonify({
-            'result': 'error',
-            'errors': ['empty input']
-        })
+        return jsonify({'result': 'error', 'errors': ['empty input']})
+    # Throw error if program contains spacial characters
+    # TODO: string handling should be done using unicode, so this check won't
+    #   be necessary
     try:
         str(program)
     except:
-        return jsonify({
-            'result': 'error',
-            'errors': ["characters not allowed"]
-        })
-    print "Running process: " + program
+        return jsonify({'result': 'error', 'errors': ["characters not allowed"]})
+    # Log process to be executed
+    print "Executing process: " + program
+    # SCCP Step: translate program to SCCP
     maude.run("red in SCCP-RUN : "+program+" . \n")
-    answer = maude.getOutput()
-    if answer[0] == "error":
-        return jsonify({'result': 'error', 'errors': answer[1]})
-    else:
-        parsingResult = parse("result SpaInstruc: {}", answer[1])
-        program = parsingResult[0]
+    result, data, _ = maude.getOutput()
+    # If error, throw
+    if result == "error":
+        return jsonify({'result': 'error', 'errors': data})
+    # Get translated program from maude response
+    program = parse("result SpaInstruc: {}", data)[0]
+    # Pre-NTCC Step: patch program to correctly include username and pid.
     program = program.replace('<pid|', '<'+str(ntccTime)+'|')
     program = program.replace('{pid}',  str(ntccTime))
     program = program.replace('|usn>', '|'+user+'>')
     program = program.replace('usn', user)
+    # NTCC Step: execute program along with the other existent process
     processes = program + " || " + processes
-    maude.run("red in NTCC-RUN : IO(< "+processes+" ; "+memory+" >) . \n")
-    answer = maude.getOutput()
-    if answer[0] == "error":
-        return jsonify({'result': 'error', 'errors': answer[1]})
-    else:
-        saveState(answer[1])
-        if updateClock == "1":
-            ntccTicTac()
-        return jsonify({'result': 'ok'})
+    maude.run("red in NTCC-RUN : IO(< "+processes+" ; "+rawMemory+" >) . \n")
+    result, data, _ = maude.getOutput()
+    # if error, throw
+    if result == "error":
+        return jsonify({'result': 'error', 'errors': data})
+    # store data to update system status
+    saveState(data)
+    # update clock if flag is set
+    if updateClock == "1":
+        ntccTicTac()
+    # Reply with status OK
+    return jsonify({'result': 'ok'})
 
 
 @app.route('/getSpace', methods=['POST'])
@@ -303,20 +288,20 @@ def getSpace():
     if ('path' in request.json):
         path += "." + str(request.json['path'])
     try:
-        result = memoryDictionary[path]
+        space = memory[path]
         newResult = []
-        for i in result:
+        for i in space:
             newResult.append(extractInfo(i))
-        result = newResult
+        space = newResult
     except:
-        result = []
-    result.sort(key=lambda clock: int(clock['clock']), reverse=True)
-    return jsonify({'result': result})
+        space = []
+    space.sort(key=lambda clock: int(clock['clock']), reverse=True)
+    return jsonify({'result': space})
 
 
 # Version 30/05/2018 8:18pm
 if __name__ == '__main__':
     setNtccTime()
     refreshState()
-    storeMemory(memory)
+    storeMemory(rawMemory)
     app.run(host='0.0.0.0', port=8082)
