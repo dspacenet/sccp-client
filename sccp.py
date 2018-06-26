@@ -147,8 +147,7 @@ def extractInfo(msg):
             'clock': info[0],
             'user_msg': info[2],
             'msg': message,
-            'class':
-            "none"
+            'class': "none"
         }
     return r
 
@@ -229,21 +228,6 @@ def saveState(result):
     processesFile.close()
 
 
-def errorToJson(errors):
-    """
-    Function that gets a list of errors and converts it into a list of errors
-    in json.
-
-    Arguments: errors {[type]} -- [error1,error2,...,errorN]
-
-    Returns: [type] -- [{'error': error1, 'error': error2...,'errorN': errorN}]
-    """
-    jErrors = []
-    for i in errors:
-        element = {'error': i}
-        jErrors.append(element)
-    return jErrors
-
 # Routes of the rest server
 app = Flask(__name__)
 
@@ -280,32 +264,32 @@ def runSCCP():
     if program == "":
         return jsonify({
             'result': 'error',
-            'errors': [{'error': 'empty input'}]
+            'errors': ['empty input']
         })
     try:
         str(program)
     except:
-        errors = errorToJson(["characters not allowed"])
-        return jsonify({'result': 'error', 'errors': errors})
+        return jsonify({
+            'result': 'error',
+            'errors': ["characters not allowed"]
+        })
     print "Running process: " + program
     maude.run("red in SCCP-RUN : "+program+" . \n")
     answer = maude.getOutput()
     if answer[0] == "error":
-        errors = errorToJson(answer[1])
-        return jsonify({'result': 'error', 'errors': errors})
+        return jsonify({'result': 'error', 'errors': answer[1]})
     else:
         parsingResult = parse("result SpaInstruc: {}", answer[1])
         program = parsingResult[0]
-    program = program.replace('<pid|','<'+str(ntccTime)+'|')
-    program = program.replace('{pid}', str(ntccTime))
-    program = program.replace('|usn>','|'+user+'>')
+    program = program.replace('<pid|', '<'+str(ntccTime)+'|')
+    program = program.replace('{pid}',  str(ntccTime))
+    program = program.replace('|usn>', '|'+user+'>')
     program = program.replace('usn', user)
     processes = program + " || " + processes
     maude.run("red in NTCC-RUN : IO(< "+processes+" ; "+memory+" >) . \n")
     answer = maude.getOutput()
     if answer[0] == "error":
-        errors = errorToJson(answer[1])
-        return jsonify({'result': 'error', 'errors': errors})
+        return jsonify({'result': 'error', 'errors': answer[1]})
     else:
         saveState(answer[1])
         if updateClock == "1":
@@ -315,10 +299,9 @@ def runSCCP():
 
 @app.route('/getSpace', methods=['POST'])
 def getSpace():
-    agent = request.json['id']
     path = "0"
-    for i in agent:
-        path = path+"."+str(i)
+    if ('path' in request.json):
+        path += "." + str(request.json['path'])
     try:
         result = memoryDictionary[path]
         newResult = []
@@ -329,18 +312,6 @@ def getSpace():
         result = []
     result.sort(key=lambda clock: int(clock['clock']), reverse=True)
     return jsonify({'result': result})
-
-
-# This function returns the global memory
-@app.route('/getGlobal', methods=['GET'])
-def getGlobal():
-    parsingResult = parse("{}[{}]", memory)
-    if parsingResult[0] is None:
-        return jsonify({'result': 'Empty'})
-    else:
-        answer = convertMemInJson(parsingResult[0])
-        answer.sort(key=lambda clock: int(clock['clock']), reverse=True)
-        return jsonify({'result': answer})
 
 
 # Version 30/05/2018 8:18pm
