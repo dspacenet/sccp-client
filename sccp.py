@@ -301,6 +301,7 @@ def getSpace():
 
 # Version 30/05/2018 8:18pm
 if __name__ == '__main__':
+    # TODO: Initialice system files is not files not found
     setNtccTime()
     refreshState()
     storeMemory(rawMemory)
