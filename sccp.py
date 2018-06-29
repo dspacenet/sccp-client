@@ -53,12 +53,12 @@ def splitMessages(stringMessages):
     return messages
 
 
-def storeChild(memory, stack, i):
+def storeChild(mem, stack, i):
     global memory
     path = str(stack[0])
     for j in stack[1:]:
         path = path+"."+str(j)
-    agentString = memory[i:]
+    agentString = mem[i:]
     index = agentString.find("[")
     if index != -1:
         agentString = agentString[:index]
