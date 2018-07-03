@@ -3,6 +3,7 @@ from parse import parse
 from maude import MaudeProcess
 from crontab import CronTab
 import os
+import re
 
 # Structure of messages: "<clock,id_user>message"
 # System files are located inside the following directory
@@ -51,41 +52,6 @@ def splitMessages(stringMessages):
             message = message+c
     messages.append(message)
     return messages
-
-
-def storeChild(mem, stack, i):
-    global memory
-    path = str(stack[0])
-    for j in stack[1:]:
-        path = path+"."+str(j)
-    agentString = mem[i:]
-    index = agentString.find("[")
-    if index != -1:
-        agentString = agentString[:index]
-        messages = splitMessages(agentString)
-        memory[path] = messages
-    return index
-
-
-def storeMemory(mem):
-    stack = [0]
-    i = storeChild(mem, stack, 0)
-    while i < len(mem):
-        if mem[i] == "[":
-            stack.append(0)
-            i += 1
-        elif mem[i] == "]":
-            stack.pop()
-            i += 1
-        elif mem[i] == ":":
-            stack.append(stack.pop()+1)
-            i += 1
-        elif mem[i:i+12] == "empty-forest":
-            i += 12
-        elif mem[i] == " ":
-            i += 1
-        else:
-            i += storeChild(mem, stack, i)
 
 
 def getClocks():
@@ -179,6 +145,36 @@ def createClock(path, timer):
     cron.write()
 
 
+def parseMemory(mem):
+    global memory
+    regex = re.compile(r"([\[\]:()\"\s]|[^[\[\]:()\"\s]+)")
+    tokenStream = regex.findall(mem)
+    memory = {}
+    space = [0]
+    contents = []
+    stringStart = 0
+
+    for i in range(len(tokenStream)):
+        token = tokenStream[i]
+        if token == "\"":
+            if stringStart > 0:
+                contents.append("".join(tokenStream[stringStart:i]))
+                stringStart = 0
+            else:
+                stringStart = i+1
+        elif stringStart > 0:
+            pass
+        elif token == "[":
+            if contents != []:
+                memory['.'.join(str(x) for x in space)] = contents
+            contents = []
+            space.append(0)
+        elif token == ":":
+            space[-1] += 1
+        elif token == "]":
+            space.pop()
+
+
 def saveState(result):
     """Procedure that store a successful execution on the memory and processes txt
 
@@ -193,8 +189,7 @@ def saveState(result):
     memoryFile = open(MEMORY_FILE, "w")
     memoryFile.write(rawMemory)
     memoryFile.close()
-    memory = {}
-    storeMemory(rawMemory)
+    parseMemory(rawMemory)
     clocks = getClocks()
     i = 0
     while i < len(clocks):
@@ -304,5 +299,5 @@ if __name__ == '__main__':
     # TODO: Initialice system files is not files not found
     setNtccTime()
     refreshState()
-    storeMemory(rawMemory)
+    parseMemory(rawMemory)
     app.run(host='0.0.0.0', port=8082)
